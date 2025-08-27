@@ -1,16 +1,9 @@
 #!/usr/bin/env node
 
 /**
- * MyGit CLI Tool
+ * MyGit CLI Tool with Clone Support
  * 
- * A simplified Git implementation for educational purposes.
- * This tool demonstrates core Git concepts including:
- * - Object storage with SHA-1 hashing
- * - Staging area (index) management
- * - Branch and reference handling
- * - Basic version control operations
- * 
- * Usage: node mygit-cli.js <command> [options]
+ * A simplified Git implementation for educational purposes with remote repository support.
  */
 
 const { Command } = require('commander');
@@ -47,7 +40,7 @@ async function requireRepository() {
 
 program
   .name('mygit')
-  .description('A simple Git implementation for learning purposes')
+  .description('A simple Git implementation with clone support')
   .version('1.0.0')
   .option('-v, --verbose', 'Enable verbose output')
   .option('--debug', 'Enable debug mode');
@@ -61,14 +54,6 @@ program
       const git = new MyGit(directory);
       await git.init();
       console.log(chalk.green(`✓ Initialized empty MyGit repository in ${path.resolve(directory)}/.mygit/`));
-      
-      if (program.opts().verbose) {
-        console.log(chalk.blue('\nRepository structure:'));
-        console.log('  .mygit/objects/     - Object storage');
-        console.log('  .mygit/refs/heads/  - Branch references');
-        console.log('  .mygit/HEAD         - Current branch pointer');
-        console.log('  .mygit/index        - Staging area');
-      }
     } catch (error) {
       handleError(error, 'init');
     }
@@ -79,8 +64,6 @@ program
   .command('clone <url> [directory]')
   .description('Clone a repository from a remote URL')
   .option('-b, --branch <branch>', 'Clone a specific branch', 'master')
-  .option('--depth <depth>', 'Create a shallow clone with specified depth')
-  .option('--bare', 'Create a bare repository')
   .action(async (url, directory, options) => {
     try {
       // If no directory specified, use repo name from URL
@@ -93,20 +76,12 @@ program
       
       const clonedPath = await MyGit.clone(url, directory, {
         branch: options.branch,
-        depth: options.depth ? parseInt(options.depth) : null,
-        bare: options.bare,
         verbose: program.opts().verbose
       });
 
       console.log(chalk.green(`✓ Repository cloned successfully!`));
       console.log(chalk.blue(`📁 Location: ${clonedPath}`));
       
-      if (program.opts().verbose) {
-        console.log(chalk.gray('\nNext steps:'));
-        console.log(chalk.gray(`  cd ${path.basename(clonedPath)}`));
-        console.log(chalk.gray('  mygit status'));
-        console.log(chalk.gray('  mygit log'));
-      }
     } catch (error) {
       handleError(error, 'clone');
     }
@@ -116,16 +91,12 @@ program
 program
   .command('add <files...>')
   .description('Add files to the staging area')
-  .option('-v, --verbose', 'Show detailed output')
-  .action(async (files, options) => {
+  .action(async (files) => {
     try {
       const git = await requireRepository();
       
       for (const file of files) {
         await git.add(file);
-        if (options.verbose) {
-          console.log(chalk.green(`✓ Added ${file} to staging area`));
-        }
       }
       
       console.log(chalk.green(`✓ Added ${files.length} file(s) to staging area`));
@@ -139,7 +110,6 @@ program
   .command('commit')
   .description('Record changes to the repository')
   .option('-m, --message <message>', 'Use the given message as the commit message')
-  .option('-v, --verbose', 'Show detailed commit information')
   .action(async (options) => {
     try {
       const git = await requireRepository();
@@ -151,15 +121,6 @@ program
       const commitHash = await git.commit(options.message);
       console.log(chalk.green(`✓ [${await git.reference.getCurrentBranch()} ${commitHash.substring(0, 7)}] ${options.message}`));
       
-      if (options.verbose) {
-        const commitData = await git.objectStore.getCommit(commitHash);
-        console.log(chalk.blue('\nCommit details:'));
-        console.log(`  Hash: ${commitHash}`);
-        console.log(`  Tree: ${commitData.tree}`);
-        console.log(`  Parent: ${commitData.parent || 'none'}`);
-        console.log(`  Author: ${commitData.author}`);
-        console.log(`  Date: ${commitData.date}`);
-      }
     } catch (error) {
       handleError(error, 'commit');
     }
@@ -186,7 +147,6 @@ program
         
         if (status.staged.length > 0) {
           console.log(chalk.green('\nChanges to be committed:'));
-          console.log(chalk.gray('  (use "mygit reset HEAD <file>..." to unstage)'));
           status.staged.forEach(file => {
             console.log(chalk.green(`\tnew file:   ${file}`));
           });
@@ -194,7 +154,6 @@ program
         
         if (status.modified.length > 0) {
           console.log(chalk.red('\nChanges not staged for commit:'));
-          console.log(chalk.gray('  (use "mygit add <file>..." to update what will be committed)'));
           status.modified.forEach(file => {
             console.log(chalk.red(`\tmodified:   ${file}`));
           });
@@ -202,7 +161,6 @@ program
         
         if (status.untracked.length > 0) {
           console.log(chalk.red('\nUntracked files:'));
-          console.log(chalk.gray('  (use "mygit add <file>..." to include in what will be committed)'));
           status.untracked.forEach(file => {
             console.log(chalk.red(`\t${file}`));
           });
@@ -223,7 +181,6 @@ program
   .description('Show commit logs')
   .option('-n, --max-count <number>', 'Limit the number of commits to output', '10')
   .option('--oneline', 'Show each commit on a single line')
-  .option('--graph', 'Show ASCII graph of branch/merge history')
   .action(async (options) => {
     try {
       const git = await requireRepository();
@@ -240,12 +197,7 @@ program
         } else {
           if (index > 0) console.log(); // Add spacing between commits
           
-          if (options.graph) {
-            console.log(chalk.red('*') + chalk.yellow(` commit ${commit.hash}`));
-          } else {
-            console.log(chalk.yellow(`commit ${commit.hash}`));
-          }
-          
+          console.log(chalk.yellow(`commit ${commit.hash}`));
           console.log(`Author: ${commit.author}`);
           console.log(`Date:   ${new Date(commit.date).toDateString()}`);
           console.log('');
@@ -261,16 +213,12 @@ program
 program
   .command('branch [name]')
   .description('List, create, or delete branches')
-  .option('-d, --delete <branch>', 'Delete a branch')
   .option('-v, --verbose', 'Show commit hash for each branch')
   .action(async (name, options) => {
     try {
       const git = await requireRepository();
       
-      if (options.delete) {
-        await git.reference.deleteBranch(options.delete);
-        console.log(chalk.green(`✓ Deleted branch '${options.delete}'`));
-      } else if (name) {
+      if (name) {
         await git.createBranch(name);
         console.log(chalk.green(`✓ Created branch '${name}'`));
       } else {
@@ -304,7 +252,7 @@ program
 // Switch branches
 program
   .command('checkout <branch>')
-  .description('Switch branches or restore working tree files')
+  .description('Switch branches')
   .option('-b, --new-branch', 'Create a new branch and switch to it')
   .action(async (branch, options) => {
     try {
@@ -323,63 +271,18 @@ program
     }
   });
 
-// Show object information (for debugging/learning)
-program
-  .command('cat-file <hash>')
-  .description('Show object content (for debugging)')
-  .option('-t, --type', 'Show object type')
-  .option('-s, --size', 'Show object size')
-  .option('-p, --pretty', 'Pretty-print object content')
-  .action(async (hash, options) => {
-    try {
-      const git = await requireRepository();
-      const obj = await git.objectStore.getObject(hash);
-      
-      if (options.type) {
-        console.log(obj.type);
-      } else if (options.size) {
-        console.log(obj.size);
-      } else if (options.pretty) {
-        console.log(chalk.blue(`Object type: ${obj.type}`));
-        console.log(chalk.blue(`Object size: ${obj.size} bytes`));
-        console.log(chalk.blue('Content:'));
-        
-        if (obj.type === 'blob') {
-          console.log(obj.content.toString());
-        } else if (obj.type === 'commit') {
-          const commit = await git.objectStore.getCommit(hash);
-          console.log(`tree ${commit.tree}`);
-          if (commit.parent) console.log(`parent ${commit.parent}`);
-          console.log(`author ${commit.author}`);
-          console.log(`committer ${commit.committer || commit.author}`);
-          console.log('');
-          console.log(commit.message);
-        } else {
-          console.log(obj.content.toString());
-        }
-      } else {
-        console.log(obj.content.toString());
-      }
-    } catch (error) {
-      handleError(error, 'cat-file');
-    }
-  });
-
-// Remote management
+// Remote operations
 program
   .command('remote')
-  .description('Manage remote repositories')
+  .description('List remote repositories')
   .option('-v, --verbose', 'Show remote URLs')
   .action(async (options) => {
     try {
       const git = await requireRepository();
-      
-      // List remotes
       const remotes = await git.listRemotes();
       
       if (remotes.length === 0) {
         console.log(chalk.yellow('No remotes configured.'));
-        console.log(chalk.gray('Use "mygit remote add <name> <url>" to add a remote.'));
         return;
       }
       
@@ -396,29 +299,50 @@ program
     }
   });
 
-// Add remote (alternative syntax)
 program
-  .command('remote add <name> <url>')
+  .command('remote-add <name> <url>')
   .description('Add a new remote repository')
   .action(async (name, url) => {
     try {
       const git = await requireRepository();
       await git.addRemote(name, url);
     } catch (error) {
-      handleError(error, 'remote add');
+      handleError(error, 'remote-add');
     }
   });
 
-// Remove remote (alternative syntax)
+// Show object information (for debugging/learning)
 program
-  .command('remote remove <name>')
-  .description('Remove a remote repository')
-  .action(async (name) => {
+  .command('cat-file <hash>')
+  .description('Show object content (for debugging)')
+  .option('-p, --pretty', 'Pretty-print object content')
+  .action(async (hash, options) => {
     try {
       const git = await requireRepository();
-      await git.removeRemote(name);
+      const obj = await git.objectStore.getObject(hash);
+      
+      if (options.pretty) {
+        console.log(chalk.blue(`Object type: ${obj.type}`));
+        console.log(chalk.blue(`Object size: ${obj.size} bytes`));
+        console.log(chalk.blue('Content:'));
+        
+        if (obj.type === 'blob') {
+          console.log(obj.content.toString());
+        } else if (obj.type === 'commit') {
+          const commit = await git.objectStore.getCommit(hash);
+          console.log(`tree ${commit.tree}`);
+          if (commit.parent) console.log(`parent ${commit.parent}`);
+          console.log(`author ${commit.author}`);
+          console.log('');
+          console.log(commit.message);
+        } else {
+          console.log(obj.content.toString());
+        }
+      } else {
+        console.log(obj.content.toString());
+      }
     } catch (error) {
-      handleError(error, 'remote remove');
+      handleError(error, 'cat-file');
     }
   });
 

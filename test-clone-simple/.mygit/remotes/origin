@@ -1,0 +1,6 @@
+{
+  "name": "origin",
+  "url": "https://github.com/octocat/Hello-World",
+  "fetch": "+refs/heads/*:refs/remotes/origin/*",
+  "addedAt": "2025-08-27T17:24:56.133Z"
+}

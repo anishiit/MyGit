@@ -231,6 +231,61 @@ class MyGit {
     
     return files;
   }
+
+  /**
+   * Clone a repository from a remote URL
+   * @param {string} url - Repository URL
+   * @param {string} directory - Target directory
+   * @param {Object} options - Clone options
+   * @returns {string} - Path to cloned repository
+   */
+  static async clone(url, directory, options = {}) {
+    const { SimpleRemote } = require('./SimpleRemote');
+    const remote = new SimpleRemote();
+    return await remote.clone(url, directory, options);
+  }
+
+  /**
+   * Add a remote to the repository
+   * @param {string} name - Remote name (e.g., 'origin')
+   * @param {string} url - Remote URL
+   */
+  async addRemote(name, url) {
+    const { SimpleRemote } = require('./SimpleRemote');
+    const remote = new SimpleRemote(this.gitDir);
+    await remote.addRemote(this.gitDir, name, url);
+  }
+
+  /**
+   * List all remotes
+   * @returns {Array} - Array of remote configurations
+   */
+  async listRemotes() {
+    const { SimpleRemote } = require('./SimpleRemote');
+    const remote = new SimpleRemote(this.gitDir);
+    return await remote.listRemotes(this.gitDir);
+  }
+
+  /**
+   * Remove a remote
+   * @param {string} name - Remote name to remove
+   */
+  async removeRemote(name) {
+    const { SimpleRemote } = require('./SimpleRemote');
+    const remote = new SimpleRemote(this.gitDir);
+    await remote.removeRemote(this.gitDir, name);
+  }
+
+  /**
+   * Get remote information
+   * @param {string} name - Remote name
+   * @returns {Object|null} - Remote configuration
+   */
+  async getRemote(name) {
+    const { SimpleRemote } = require('./SimpleRemote');
+    const remote = new SimpleRemote(this.gitDir);
+    return await remote.getRemote(this.gitDir, name);
+  }
 }
 
 module.exports = MyGit;
