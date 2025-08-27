@@ -1,0 +1,9 @@
+{
+  "name": "mygit-demo",
+  "version": "1.0.0",
+  "description": "Demo project for MyGit",
+  "main": "app.js",
+  "scripts": {
+    "start": "node app.js"
+  }
+}

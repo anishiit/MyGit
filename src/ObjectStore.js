@@ -51,10 +51,15 @@ class ObjectStore {
 
   /**
    * Retrieve an object from the object store
-   * @param {string} hash - Object hash
+   * @param {string} hash - Object hash (can be partial)
    * @returns {Object} - Object with type and content
    */
   async getObject(hash) {
+    // If hash is partial, try to resolve it
+    if (hash.length < 40) {
+      hash = await this.resolvePartialHash(hash);
+    }
+    
     const dir = hash.substring(0, 2);
     const file = hash.substring(2);
     const objectPath = path.join(this.objectsDir, dir, file);
@@ -75,6 +80,38 @@ class ObjectStore {
       size: parseInt(size),
       content: objectContent
     };
+  }
+
+  /**
+   * Resolve a partial hash to a full hash
+   * @param {string} partialHash - Partial hash (e.g., "abc123")
+   * @returns {string} - Full hash
+   */
+  async resolvePartialHash(partialHash) {
+    if (partialHash.length < 4) {
+      throw new Error('Hash too short, need at least 4 characters');
+    }
+    
+    const dir = partialHash.substring(0, 2);
+    const partialFile = partialHash.substring(2);
+    const dirPath = path.join(this.objectsDir, dir);
+    
+    if (!await fs.pathExists(dirPath)) {
+      throw new Error(`No objects found with prefix ${partialHash}`);
+    }
+    
+    const files = await fs.readdir(dirPath);
+    const matchingFiles = files.filter(file => file.startsWith(partialFile));
+    
+    if (matchingFiles.length === 0) {
+      throw new Error(`No objects found with prefix ${partialHash}`);
+    }
+    
+    if (matchingFiles.length > 1) {
+      throw new Error(`Ambiguous hash ${partialHash}, matches multiple objects: ${matchingFiles.slice(0, 5).join(', ')}`);
+    }
+    
+    return dir + matchingFiles[0];
   }
 
   /**

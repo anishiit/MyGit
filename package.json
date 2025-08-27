@@ -1,8 +1,8 @@
 {
   "name": "mygit",
   "version": "1.0.0",
-  "description": "A simple Git implementation in Node.js",
-  "license": "ISC",
+  "description": "A simple Git implementation in Node.js for educational purposes",
+  "license": "MIT",
   "author": "Anish Kumar Singh",
   "type": "commonjs",
   "main": "index.js",
@@ -12,17 +12,29 @@
   "scripts": {
     "test": "echo \"Error: no test specified\" && exit 1",
     "start": "node index.js",
-    "install-global": "npm link"
+    "demo": "node demo.js",
+    "install-global": "npm link",
+    "test-basic": "node mygit-cli.js init test-basic && cd test-basic && echo 'test' > file.txt && node ../mygit-cli.js add file.txt && node ../mygit-cli.js commit -m 'Test commit' && node ../mygit-cli.js log"
   },
   "keywords": [
     "git",
     "version-control",
     "cli",
-    "educational"
+    "educational",
+    "distributed-systems",
+    "content-addressable",
+    "vcs"
   ],
   "dependencies": {
     "chalk": "^4.1.2",
     "commander": "^14.0.0",
     "fs-extra": "^11.3.1"
+  },
+  "engines": {
+    "node": ">=14.0.0"
+  },
+  "repository": {
+    "type": "git",
+    "url": "https://github.com/your-username/mygit"
   }
 }

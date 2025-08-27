@@ -59,6 +59,9 @@ class Reference {
       throw new Error(`Branch '${branchName}' already exists`);
     }
     
+    // Ensure directory exists for nested branch names (e.g., feature/auth)
+    await fs.ensureDir(path.dirname(branchPath));
+    
     // If commitHash is null, we're creating the first branch
     if (commitHash) {
       await fs.writeFile(branchPath, commitHash);
