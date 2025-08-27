@@ -1,0 +1,28 @@
+{
+  "name": "mygit",
+  "version": "1.0.0",
+  "description": "A simple Git implementation in Node.js",
+  "license": "ISC",
+  "author": "Anish Kumar Singh",
+  "type": "commonjs",
+  "main": "index.js",
+  "bin": {
+    "mygit": "./index.js"
+  },
+  "scripts": {
+    "test": "echo \"Error: no test specified\" && exit 1",
+    "start": "node index.js",
+    "install-global": "npm link"
+  },
+  "keywords": [
+    "git",
+    "version-control",
+    "cli",
+    "educational"
+  ],
+  "dependencies": {
+    "chalk": "^4.1.2",
+    "commander": "^14.0.0",
+    "fs-extra": "^11.3.1"
+  }
+}
